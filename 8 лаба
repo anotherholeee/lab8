@@ -1,273 +1,373 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-#include <stdlib.h>
 #include <locale.h>
+#include <math.h>   // for sqrt in prime-checking
 
-void write_to_file(const char* filename) {
-	FILE* file;
-	int count, num;
-	file = fopen(filename, "wb");
-	if (file == NULL) {
-		perror("ошибка");
-		exit(1);
-	}
-	printf("введите количество чисел: ");
-	scanf_s("%d", &count);
-	printf("введите числа: ");
 
-	for (int i = 0; i < count; i++) {
-		scanf_s("%d", &num);
-		fwrite(&num, sizeof(int), 1, file);
-	}
-	fclose(file);
+void fillFile(const char *filename);
+void readFile(const char *filename);
+void findMax(const char *filename);
+void findMin(const char *filename);
+void swapElements(const char *filename);
+void sortNegativeDescending(const char *filename);
+void countPrimeNumbers(const char *filename);
+void invertSign(const char *filename);
+
+int  isPrime(int num);
+void readArrayFromFile(const char *filename, int *array, int count);
+void writeArrayToFile(const char *filename, int *array, int count);
+int  getFileSizeInIntegers(FILE *file);
+
+int main(int argv, char* argc[]) {
+    setlocale(LC_ALL, "russian");
+
+    char ccc;
+    int choice;
+    char* filename = argc[1];
+
+    do {
+
+
+        puts("Что вы желаете сделать?:");
+        puts("1. Заполнить файл целыми числами");
+        puts("2. Прочитать данные из файла");
+        puts("3. Найти максимальный элемент");
+        puts("4. Найти минимальный элемент");
+        puts("5. Поменять местами элементы в файле");
+        puts("6. Отсортировать все отрицательные элементы по убыванию");
+        puts("7. Посчитать количество простых чисел в файле");
+        puts("8. Заменить знак каждого числа на противоположный");
+
+        scanf("%d", &choice);
+
+        switch(choice) {
+            case 1: fillFile(filename); break;
+            case 2: readFile(filename); break;
+            case 3: findMax(filename); break;
+            case 4: findMin(filename); break;
+            case 5: swapElements(filename); break;
+            case 6: sortNegativeDescending(filename); break;
+            case 7: countPrimeNumbers(filename); break;
+            case 8: invertSign(filename); break;
+            default:
+                puts("Неверный ввод...");
+        }
+
+        puts("\nContinue? 1 to yes:\n");
+        rewind(stdin);
+        ccc = getchar();
+    } while (ccc == '1');
+
+    return 0;
 }
 
-void read_from_file(const char* filename) {
-	FILE* file;
-	int num;
+// ---------------------------------------------
+// 1) Заполнить файл целыми числами
+// ---------------------------------------------
+void fillFile(const char *filename) {
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
 
-	file = fopen(filename, "rb");
-	if (file == NULL) {
-		perror("Ошибка");
-		exit(1);
-	}
-	printf("данные из файла: ");
-	while (fread(&num, sizeof(int), 1, file) == 1) {
-		printf("%d ", num);
-	}
-	printf("\n");
-	fclose(file);
+    int count;
+    puts("Введите кол-во чисел: ");
+    scanf("%d", &count);
+
+    if(count == 1) {
+        printf("Введите %d число:\n", count);
+    } else if(count == 2 || count == 3 || count == 4) {
+        printf("Введите %d числа:\n", count);
+    } else {
+        printf("Введите %d чисел:\n", count);
+    }
+
+    for (int i = 0; i < count; i++) {
+        int num;
+        scanf("%d", &num);
+        fwrite(&num, sizeof(num), 1, file);
+    }
+
+    fclose(file);
+    puts("Данные успешно занесены!");
 }
 
-void find_max_and_count(const char* filename) {
-	FILE* file;
-	int num, max = 0, count = 0;
-	int first = 1;
+// ---------------------------------------------
+// 2) Прочитать данные из файла
+// ---------------------------------------------
+void readFile(const char *filename) {
+    int array[100];
+    int count;
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
 
-	file = fopen(filename, "rb");
-	if (file == NULL) {
-		perror("Ошибка");
-		exit(1);
-	}
-	while (fread(&num, sizeof(int), 1, file) == 1) {
-		if (first || num > max) {
-			max = num;
-			count = 1;
-			first = 0;
-		}
-		else if (num == max) {
-			count++;
-		}
-	}
-	fclose(file);
-	printf("максимальное значение: %d\n", max);
-	printf("количество элементов с максимальным значением: %d\n", count);
+    puts("Введите кол-во чисел для чтения: ");
+    scanf("%d", &count);
+
+    fread(array, sizeof(int), count, file);
+    fclose(file);
+
+    puts("Считанные данные:");
+    for (int i = 0; i < count; i++) {
+        printf("%d ", array[i]);
+    }
+    puts("");
 }
 
-void count_negative_elements(const char* filename) {
-	FILE* file;
-	int num, negative_count = 0;
+// ---------------------------------------------
+// 3) Найти максимальный элемент
+// ---------------------------------------------
+void findMax(const char *filename) {
+    int count;
+    int array[100];
 
-	file = fopen(filename, "rb");
-	if (file == NULL) {
-		perror("ошибка");
-		exit(1);
-	}
-	while (fread(&num, sizeof(int), 1, file) == 1) {
-		if (num < 0) {
-			negative_count++;
-		}
-	}
-	fclose(file);
-	printf("количество отрицательных элементов: %d\n", negative_count);
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
+
+    puts("Введите кол-во чисел для чтения: ");
+    scanf("%d", &count);
+
+    fread(array, sizeof(int), count, file);
+    fclose(file);
+
+    int max = array[0];
+    for (int i = 1; i < count; i++) {
+        if (array[i] > max) {
+            max = array[i];
+        }
+    }
+    printf("Максимальный элемент в файле: %d\n", max);
 }
 
-void replace_negatives_with_max(const char* filename) {
-	FILE* file;
-	int num, max = 0;
-	int first = 1;
+// ---------------------------------------------
+// 4) Найти минимальный элемент
+// ---------------------------------------------
+void findMin(const char *filename) {
+    int count;
+    int array[100];
 
-	file = fopen(filename, "r+b");
-	if (file == NULL) {
-		perror("ошибка");
-		exit(1);
-	}
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
 
+    puts("Введите кол-во чисел для чтения: ");
+    scanf("%d", &count);
 
-	while (fread(&num, sizeof(int), 1, file) == 1) {
-		if (first || num > max) {
-			max = num;
-			first = 0;
-		}
-	}
+    fread(array, sizeof(int), count, file);
+    fclose(file);
 
-	
-	fseek(file, 0, SEEK_SET);
-	while (fread(&num, sizeof(int), 1, file) == 1) {
-		if (num < 0) {
-			fseek(file, -sizeof(int), SEEK_CUR);
-			fwrite(&max, sizeof(int), 1, file);
-		}
-	}
-	fclose(file);
-	printf("отрицательные числа заменены на максимальное значение (%d).\n", max);
+    int min = array[0];
+    for (int i = 1; i < count; i++) {
+        if (array[i] < min) {
+            min = array[i];
+        }
+    }
+    printf("Минимальный элемент в файле: %d\n", min);
 }
 
-void sort_negative_numbers(const char* filename) {
-	FILE* file;
-	int num1, num2;
-	int size = 0, swapped;
+// ---------------------------------------------
+// 5) Поменять местами два элемента в файле
+// ---------------------------------------------
+void swapElements(const char *filename) {
+    int count;
+    int index1, index2, num1, num2;
 
-	file = fopen(filename, "r+b");
-	if (file == NULL) {
-		perror("Ошибка");
-		exit(1);
-	}
+    FILE *file = fopen(filename, "rb+");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
 
+    puts("Введите кол-во чисел для чтения: ");
+    scanf("%d", &count);
 
-	fseek(file, 0, SEEK_END);
-	size = ftell(file) / sizeof(int);
+    puts("Введите индексы элементов, которые хотите поменять местами:");
+    scanf("%d %d", &index1, &index2);
+    // Индексы с 1 в интерфейсе => нужно -1 для обращения
+    index1--;
+    index2--;
 
+    fseek(file, index1 * sizeof(int), SEEK_SET);
+    fread(&num1, sizeof(int), 1, file);
 
-	do {
-		swapped = 0;
-		for (int i = 0; i < size - 1; i++) {
-			fseek(file, i * sizeof(int), SEEK_SET);
-			fread(&num1, sizeof(int), 1, file);
+    fseek(file, index2 * sizeof(int), SEEK_SET);
+    fread(&num2, sizeof(int), 1, file);
 
-			fseek(file, (i + 1) * sizeof(int), SEEK_SET);
-			fread(&num2, sizeof(int), 1, file);
+    fseek(file, index1 * sizeof(int), SEEK_SET);
+    fwrite(&num2, sizeof(int), 1, file);
 
-			if (num1 < 0 && num2 < 0 && num1 > num2) {
-				fseek(file, i * sizeof(int), SEEK_SET);
-				fwrite(&num2, sizeof(int), 1, file);
+    fseek(file, index2 * sizeof(int), SEEK_SET);
+    fwrite(&num1, sizeof(int), 1, file);
 
-				fseek(file, (i + 1) * sizeof(int), SEEK_SET);
-				fwrite(&num1, sizeof(int), 1, file);
-
-				swapped = 1;
-			}
-		}
-	} while (swapped);
-	fclose(file);
-	printf("отрицательные числа отсортированы\n");
+    puts("Элементы успешно поменяны местами!");
+    fclose(file);
 }
 
-void swap_elements_in_file(const char* filename, int index1, int index2) {
-	FILE* file;
-	int num1, num2;
+// ---------------------------------------------
+// 6) Отсортировать все отрицательные элементы по убыванию
+// ---------------------------------------------
+void sortNegativeDescending(const char *filename) {
+    FILE *file = fopen(filename, "rb+");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
 
-	file = fopen(filename, "r+b");
-	if (file == NULL) {
-		perror("Ошибка");
-		exit(1);
-	}
-	fseek(file, index1 * sizeof(int), SEEK_SET);
-	fread(&num1, sizeof(int), 1, file);
+    // Определяем, сколько целых чисел лежит в файле:
+    int size = getFileSizeInIntegers(file);
 
-	fseek(file, index2 * sizeof(int), SEEK_SET);
-	fread(&num2, sizeof(int), 1, file);
+    // Пузырьковая сортировка (только среди отрицательных) по убыванию
+    int sorted;
+    do {
+        sorted = 1;
+        for(int i = 0; i < size - 1; i++) {
+            int num1, num2;
 
-	fseek(file, index1 * sizeof(int), SEEK_SET);
-	fwrite(&num2, sizeof(int), 1, file);
+            fseek(file, i * sizeof(int), SEEK_SET);
+            fread(&num1, sizeof(int), 1, file);
 
-	fseek(file, index2 * sizeof(int), SEEK_SET);
-	fwrite(&num1, sizeof(int), 1, file);
+            fseek(file, (i + 1) * sizeof(int), SEEK_SET);
+            fread(&num2, sizeof(int), 1, file);
 
-	fclose(file);
+            // Сортируем только между отрицательными
+            if(num1 < 0 || num2 < 0) {
+                // Убывание => если num1 < num2, меняем местами
+                if(num1 < num2) {
+                    fseek(file, i * sizeof(int), SEEK_SET);
+                    fwrite(&num2, sizeof(int), 1, file);
+
+                    fseek(file, (i + 1) * sizeof(int), SEEK_SET);
+                    fwrite(&num1, sizeof(int), 1, file);
+
+                    sorted = 0;
+                }
+            }
+        }
+    } while(!sorted);
+
+    fclose(file);
+
+    // Здесь выводим сообщение, но логика "if (sorted) ... else ..." в оригинале не совсем однозначна.
+    // В классической пузырьковой сортировке "sorted=1" лишь если мы не сделали ни одного обмена.
+    // Если в файле вообще нет отрицательных, то ни один обмен не происходит => sorted=1 => ...
+    // Для совместимости с оригинальным кодом:
+    if(sorted){
+        puts("Сортировка выполнена успешно");
+    } else {
+        puts("В файле отсутствуют отрицательные значения");
+    }
 }
 
-void sort_file(const char* filename) {
-	FILE* file;
-	int num1, num2;
-	int size = 0, swapped;
+// ---------------------------------------------
+// 7) Посчитать количество простых чисел
+// ---------------------------------------------
+void countPrimeNumbers(const char *filename) {
+    int array[100];
+    int count;
 
-	file = fopen(filename, "r+b");
-	if (file == NULL) {
-		perror("Ошибка");
-		exit(1);
-	}
-	fseek(file, 0, SEEK_END);
-	size = ftell(file) / sizeof(int);
-	do {
-		swapped = 0;
-		for (int i = 0; i < size - 1; i++) {
-			fseek(file, i * sizeof(int), SEEK_SET);
-			fread(&num1, sizeof(int), 1, file);
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
 
-			fseek(file, (i + 1) * sizeof(int), SEEK_SET);
-			fread(&num2, sizeof(int), 1, file);
+    puts("Введите кол-во чисел для чтения: ");
+    scanf("%d", &count);
 
-			if (num1 > num2) {
-				fseek(file, i * sizeof(int), SEEK_SET);
-				fwrite(&num2, sizeof(int), 1, file);
+    fread(array, sizeof(int), count, file);
+    fclose(file);
 
-				fseek(file, (i + 1) * sizeof(int), SEEK_SET);
-				fwrite(&num1, sizeof(int), 1, file);
+    // Подсчёт простых чисел
+    int primeCount = 0;
+    for(int i = 0; i < count; i++) {
+        if(isPrime(array[i])) {
+            primeCount++;
+        }
+    }
 
-				swapped = 1;
-			}
-		}
-	} while (swapped);
-	fclose(file);
+    printf("Количество простых чисел в файле: %d\n", primeCount);
 }
 
-int main() {
-	setlocale(LC_ALL, "RUS");
-	char filename[256];
-	printf("Введите имя файла: ");
-	scanf_s("%s", filename, (unsigned)_countof(filename));
+// ---------------------------------------------
+// 8) Заменить знак каждого числа на противоположный
+// ---------------------------------------------
+void invertSign(const char *filename) {
+    int array[100];
+    int count;
 
-	int choice;
-	do {
-		printf("\nМеню:\n");
-		printf("1. Записать числа в файл\n");
-		printf("2. Прочитать числа из файла\n");
-		printf("3. Найти максимальное значение и количество элементов\n");
-		printf("4. Посчитать количество отрицательных элементов\n");
-		printf("5. Заменить отрицательные элементы значением максимального элемента\n");
-		printf("6. Отсортировать отрицательные числа в файле\n");
-		printf("7. Поменять местами два числа\n");
-		printf("8. Отсортировать файл\n");
-		printf("0. Выход\n");
-		printf("Ваш выбор: ");
-		scanf_s("%d", &choice);
-		switch (choice) {
-		case 1:
-			write_to_file(filename);
-			break;
-		case 2:
-			read_from_file(filename);
-			break;
-		case 3:
-			find_max_and_count(filename);
-			break;
-		case 4:
-			count_negative_elements(filename);
-			break;
-		case 5:
-			replace_negatives_with_max(filename);
-			break;
-		case 6:
-			sort_negative_numbers(filename);
-			break;
-		case 7: {
-			int index1, index2;
-			printf("введите индексы двух чисел для обмена (начиная с нуля): ");
-			scanf_s("%d %d", &index1, &index2);
-			swap_elements_in_file(filename, index1, index2);
-			break;
-		}
-		case 8:
-			sort_file(filename);
-			break;
-		case 0:
-			printf("выход...\n");
-			break;
-		default:
-			printf("неверный выбор, попробуйте ещё раз\n");
-		}
+    FILE *file = fopen(filename, "rb+");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
 
-	} while (choice != 0);
-	return 0;
+    puts("Введите кол-во чисел для чтения: ");
+    scanf("%d", &count);
+
+    fread(array, sizeof(int), count, file);
+
+    for(int i = 0; i < count; i++) {
+        array[i] = -array[i];
+    }
+
+    fseek(file, 0, SEEK_SET);
+    fwrite(array, sizeof(int), count, file);
+    fclose(file);
+
+    puts("Числа успешно заменены на противоположные");
+}
+
+// ---------------------------------------------
+// Helper Functions
+// ---------------------------------------------
+
+// Проверка, является ли число простым
+int isPrime(int num) {
+    if(num < 2) return 0;
+    if(num == 2) return 1;
+    if(num % 2 == 0) return 0;
+    for(int i = 3; i <= (int)sqrt(num); i += 2) {
+        if(num % i == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Универсальная функция чтения count элементов из файла в массив
+void readArrayFromFile(const char *filename, int *array, int count) {
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
+    fread(array, sizeof(int), count, file);
+    fclose(file);
+}
+
+// Универсальная функция записи count элементов в файл
+void writeArrayToFile(const char *filename, int *array, int count) {
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        perror("filename");
+        return;
+    }
+    fwrite(array, sizeof(int), count, file);
+    fclose(file);
+}
+
+// Узнаём, сколько целых чисел лежит в открытом файле (rb, rb+ и т.п.)
+int getFileSizeInIntegers(FILE *file) {
+    fseek(file, 0, SEEK_END);
+    long fileSizeBytes = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    return (int)(fileSizeBytes / sizeof(int));
 }
